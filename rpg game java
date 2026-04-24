@@ -1,179 +1,240 @@
-
 import java.util.Scanner;
 import java.util.Random;
 
 public class Main {
 
-    static String[] inventario = new String[4];
+    static Scanner input = new Scanner(System.in);
     static Random rand = new Random();
 
-    public static void main(String[] args) {
+    // --- VARIABILI PERSONAGGIO ---
+    static String nome;
+    static int sceltaclasse = 0;
+    static int attacco, difesa, velocita;
+    static int energia = 100;
+    static int esperienza = 0;
+    static String[] inventario;
 
-        Scanner in = new Scanner(System.in);
+    // --- VARIABILI MAPPA ---
+    static int righe = 10;
+    static int colonne = 10;
+    static char[][] mappa = new char[righe][colonne];
+    static int nemMappa = 10;
+    static int oggMappa = 6;  
 
-        System.out.print("Inserisci il tuo nome: ");
-        String name = in.nextLine().trim();
-        if (name.isEmpty()) name = "Eroe";
+    // --- POSIZIONE GIOCATORE ---
+    static int playerX;
+    static int playerY;
 
-        String classe = "";
-        int maxEnergia = 0, energia = 0, att = 0, def = 0, velocita = 0;
+    // --- VARIABILI NEMICO ---
+    static String classenemico;
+    static int attacconemico, difesanemico, energianemico;
 
-        while (true) {
-            System.out.println("\nScegli la classe:");
-            System.out.println("1) Guerriero   2) Mago   3) Ladro");
-            System.out.print("Scelta (1-3): ");
-            String scelta = in.nextLine().trim();
+    // --- METODI MAPPA ---
 
-            switch (scelta) {
-                case "1":
-                    classe = "Guerriero";
-                    maxEnergia = 120; att = 18; def = 12; velocita = 20;
-                    break;
-                case "2":
-                    classe = "Mago";
-                    maxEnergia = 80; att = 6; def = 6; velocita = 30;
-                    break;
-                case "3":
-                    classe = "Ladro";
-                    maxEnergia = 100; att = 12; def = 8; velocita = 50;
-                    break;
+    public static void inizializzaMappa() {
+        for (int i = 0; i < righe; i++) {
+            for (int j = 0; j < colonne; j++) {
+                mappa[i][j] = '.';
+            }
+        }
+        playerX = 0;
+        playerY = 0;
+        mappa[playerY][playerX] = 'P';
+    }
+
+    public static void posizionaElementiMappa(int quantita, char simbolo) {
+        int i = 0;
+        while (i < quantita) {
+            int x = rand.nextInt(colonne);
+            int y = rand.nextInt(righe);
+            if (mappa[y][x] == '.') {
+                mappa[y][x] = simbolo;
+                i++;
+            }
+        }
+    }
+
+    // --- NUOVO METODO: GESTIONE MAPPA E MOVIMENTO CONTINUO ---
+    public static void gestioneMappa() {
+        String comando = "";
+       
+        while (!comando.equals("E")) {
+            mostraMappa();
+            System.out.println("MUOVI: [W] su | [A] sx | [S] giù | [D] dx | [E] Esci");
+            System.out.print("> ");
+            comando = input.next().toUpperCase();
+
+            if (comando.equals("E")) {
+                System.out.println("Ritorno al menu principale...");
+                break;
+            }
+
+            char movimento = comando.charAt(0);
+            int nuovoY = playerY;
+            int nuovoX = playerX;
+
+            switch (movimento) {
+                case 'W': nuovoY--; break;
+                case 'S': nuovoY++; break;
+                case 'A': nuovoX--; break;
+                case 'D': nuovoX++; break;
                 default:
-                    System.out.println("Scelta non valida, riprova.");
-                    continue;
+                    System.out.println("[Comando non valido]");
+                    continue; // Salta il resto del ciclo
             }
-            break;
-        }
 
-        inizializzaInventario(classe);
-        ordinaInventario();
-
-        energia = maxEnergia;
-
-        System.out.println("\n===== STATISTICHE =====");
-        System.out.println("Nome: " + name);
-        System.out.println("Classe: " + classe);
-        System.out.println("Energia: " + energia + " / " + maxEnergia);
-        System.out.println("Velocità: " + velocita);
-
-        System.out.println("\n===== INVENTARIO =====");
-        for (String oggetto : inventario) {
-            if (oggetto != null)
-                System.out.println("- " + oggetto);
-        }
-
-        combattiNemico(name, energia, att, def, velocita);
-
-        in.close();
-    }
-
-    public static void inizializzaInventario(String classe) {
-
-        if (classe.equals("Guerriero")) {
-            inventario[0] = "Spada";
-            inventario[1] = "Scudo";
-            inventario[2] = "Pozione 10";
-            inventario[3] = null;
-        }
-        else if (classe.equals("Mago")) {
-            inventario[0] = "Bastone magico";
-            inventario[1] = "Pergamena";
-            inventario[2] = "Pozione 10";
-            inventario[3] = null;
-        }
-        else if (classe.equals("Ladro")) {
-            inventario[0] = "Pugnale";
-            inventario[1] = "Arco";
-            inventario[2] = "Pozione 10";
-            inventario[3] = null;
-        }
-    }
-
-    public static void ordinaInventario() {
-
-        for (int i = 0; i < inventario.length - 1; i++) {
-            for (int j = i + 1; j < inventario.length; j++) {
-
-                if (inventario[i] == null && inventario[j] != null) {
-                    String temp = inventario[i];
-                    inventario[i] = inventario[j];
-                    inventario[j] = temp;
-                }
-                else if (inventario[i] != null && inventario[j] != null &&
-                        inventario[i].compareToIgnoreCase(inventario[j]) > 0) {
-
-                    String temp = inventario[i];
-                    inventario[i] = inventario[j];
-                    inventario[j] = temp;
-                }
-            }
-        }
-    }
-
-    public static String generaNemico(int[] statsNemico) {
-
-        int tipo = rand.nextInt(3);
-
-        if (tipo == 0) {
-            statsNemico[0] = 60;
-            statsNemico[1] = 10;
-            return "Goblin";
-        }
-        else if (tipo == 1) {
-            statsNemico[0] = 80;
-            statsNemico[1] = 14;
-            return "Scheletro";
-        }
-        else {
-            statsNemico[0] = 100;
-            statsNemico[1] = 18;
-            return "Orco";
-        }
-    }
-
-    public static void combattiNemico(String name, int energia, int att, int def, int velocita) {
-
-        int[] statsNemico = new int[2];
-        String nomeNemico = generaNemico(statsNemico);
-
-        int energiaNemico = statsNemico[0];
-        int attNemico = statsNemico[1];
-
-        System.out.println("\nÈ apparso un " + nomeNemico + "!");
-        System.out.println(nomeNemico + " Energia: " + energiaNemico);
-
-        while (energia > 0 && energiaNemico > 0) {
-
-            // Turno giocatore
-            int danno = att + rand.nextInt(6);
-            energiaNemico -= danno;
-
-            System.out.println(name + " infligge " + danno + " danni!");
-
-            if (energiaNemico <= 0) break;
-
-            // Controllo schivata
-            int schivata = rand.nextInt(100);
-
-            if (schivata < velocita) {
-                System.out.println("Sei stato rapido! Il nemico manca il turno!");
+            // Controllo confini
+            if (nuovoY < 0 || nuovoY >= righe || nuovoX < 0 || nuovoX >= colonne) {
+                System.out.println("[Muro! Non puoi uscire dai confini]");
             } else {
-
-                int dannoNemico = attNemico + rand.nextInt(6) - def / 2;
-                if (dannoNemico < 0) dannoNemico = 0;
-
-                energia -= dannoNemico;
-
-                System.out.println(nomeNemico + " infligge " + dannoNemico + " danni!");
+                // Aggiorna posizione sulla mappa
+                mappa[playerY][playerX] = '.'; // Pulisce vecchia posizione
+                playerY = nuovoY;
+                playerX = nuovoX;
+                mappa[playerY][playerX] = 'P'; // Segna nuova posizione
             }
+        }
+    }
 
-            System.out.println("Energia tua: " + energia +
-                               " | Energia nemico: " + energiaNemico);
+    public static void mostraMappa() {
+        System.out.println("\n--- ESPLORAZIONE ---");
+        for (int j = 0; j < colonne + 2; j++) System.out.print("# ");
+        System.out.println();
+
+        for (int i = 0; i < righe; i++) {
+            System.out.print("# ");
+            for (int j = 0; j < colonne; j++) {
+                System.out.print(mappa[i][j] + " ");
+            }
+            System.out.println("#");
         }
 
-        if (energia > 0) {
-            System.out.println("\nHai sconfitto il " + nomeNemico + "!");
-        } else {
-            System.out.println("\nSei stato sconfitto...");
+        for (int j = 0; j < colonne + 2; j++) System.out.print("# ");
+        System.out.println();
+    }
+
+    // --- MENU E LOGICA DI GIOCO ---
+
+    public static void mostraMenu() {
+        int sceltaMenu = -1;
+        while (sceltaMenu != 0) {
+            System.out.println("\n--- MENU PRINCIPALE ---");
+            System.out.println("1. Statistiche | 2. Inventario | 3. Esplora Mappa | 4. Ordina Zaino | 0. Combatti");
+            System.out.print("> ");
+           
+            if (input.hasNextInt()) {
+                sceltaMenu = input.nextInt();
+                input.nextLine();
+
+                if (sceltaMenu == 1) mostraStatistiche();
+                else if (sceltaMenu == 2) mostraInventario();
+                else if (sceltaMenu == 3) gestioneMappa(); // Entra nel ciclo movimento
+                else if (sceltaMenu == 4) ordinaInventario();
+            } else {
+                System.out.println("[Errore: Inserisci un numero]");
+                input.next();
+            }
         }
+    }
+
+    // (Gli altri metodi: ordinaInventario, sceltaClasse, compilaInventario, generaNemico, combattimento rimangono invariati)
+   
+    public static void ordinaInventario() {
+        if (inventario == null) return;
+        for (int i = 0; i < inventario.length - 1; i++) {
+            for (int j = 0; j < inventario.length - 1 - i; j++) {
+                if (inventario[j] == null && inventario[j + 1] != null) {
+                    String temp = inventario[j];
+                    inventario[j] = inventario[j + 1];
+                    inventario[j + 1] = temp;
+                } else if (inventario[j] != null && inventario[j + 1] != null) {
+                    if (inventario[j].compareToIgnoreCase(inventario[j + 1]) > 0) {
+                        String temp = inventario[j];
+                        inventario[j] = inventario[j + 1];
+                        inventario[j + 1] = temp;
+                    }
+                }
+            }
+        }
+        System.out.println("[Zaino riordinato!]");
+    }
+
+    public static void sceltaClasse() {
+        System.out.println("Scegli la classe:\n1. Guerriero\n2. Mago\n3. Ladro");
+        do {
+            System.out.print("> ");
+            if (input.hasNextInt()) {
+                sceltaclasse = input.nextInt();
+                input.nextLine();
+                if (sceltaclasse >= 1 && sceltaclasse <= 3) compilaInventario();
+                else System.out.println("Scelta non valida!");
+            } else {
+                input.next();
+            }
+        } while (sceltaclasse < 1 || sceltaclasse > 3);
+    }
+
+    public static void compilaInventario() {
+        if (sceltaclasse == 1) inventario = new String[]{"spada", "scudo", "pozione", "pozione"};
+        else if (sceltaclasse == 2) inventario = new String[]{"bastone", "pergamena", "pozione", "pozione"};
+        else if (sceltaclasse == 3) inventario = new String[]{"pugnale", "arco", "pozione", "pozione"};
+    }
+
+    public static void generaNemico() {
+        int tipo = rand.nextInt(3);
+        if (tipo == 0) { classenemico = "Orco"; energianemico = 80; attacconemico = 20; difesanemico = 5; }
+        else if (tipo == 1) { classenemico = "Scheletro"; energianemico = 50; attacconemico = 15; difesanemico = 2; }
+        else { classenemico = "Drago"; energianemico = 150; attacconemico = 30; difesanemico = 15; }
+        System.out.println("\nUn " + classenemico + " selvatico appare!");
+    }
+
+    public static void combattimento() {
+        while (energia > 0 && energianemico > 0) {
+            System.out.println("Premi INVIO per colpire!");
+            input.nextLine();
+            if (rand.nextInt(100) < velocita) {
+                int danno = Math.max(0, attacco - difesanemico);
+                energianemico -= danno;
+                System.out.println("Colpisci! Danni: " + danno);
+            }
+            if (energianemico > 0) {
+                int dannoSubito = Math.max(0, attacconemico - difesa);
+                energia -= dannoSubito;
+                System.out.println("Il nemico ti colpisce! Energia: " + Math.max(0, energia));
+            }
+        }
+        if (energia > 0) { System.out.println("Vittoria!"); esperienza += 10; }
+        else System.out.println("Hai perso...");
+    }
+
+    public static void mostraStatistiche() {
+        System.out.println("\n--- " + (nome != null ? nome.toUpperCase() : "EROE") + " ---");
+        System.out.println("HP: " + energia + " | ATT: " + attacco + " | DIF: " + difesa + " | ESP: " + esperienza);
+    }
+
+    public static void mostraInventario() {
+        if (inventario == null) return;
+        System.out.println("\n--- ZAINO ---");
+        for (int i = 0; i < inventario.length; i++)
+            System.out.println((i + 1) + ") " + (inventario[i] == null ? "---" : inventario[i]));
+    }
+
+    public static void main(String[] args) {
+        System.out.print("Nome Eroe: ");
+        nome = input.nextLine();
+
+        sceltaClasse();
+        if (sceltaclasse == 1) { attacco = 12; difesa = 8; energia = 100; velocita = 45; }
+        else if (sceltaclasse == 2) { attacco = 15; difesa = 4; energia = 80; velocita = 35; }
+        else { attacco = 10; difesa = 5; energia = 90; velocita = 65; }
+
+        inizializzaMappa();
+        posizionaElementiMappa(nemMappa, 'N');
+        posizionaElementiMappa(oggMappa, 'O');
+
+        mostraMenu();
+
+        generaNemico();
+        combattimento();
     }
 }
